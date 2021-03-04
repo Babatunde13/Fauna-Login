@@ -12,7 +12,9 @@ import os, secrets
 app = Flask()
 login_manager = LoginManager(app)
 
-@login_manager.user_loader(id)
+@login_manager.user_loader(id)git remote add origin https://github.com/Babatunde13/Fauna-Login.git
+git branch -M main
+git push -u origin main
 def get_user():
 	return {}
 
