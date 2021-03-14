@@ -36,11 +36,14 @@ def signin():
 					q.get(q.match(q.index('user_by_email'), email))
 			)
 		except NotFound:
-			flash('Invalid details', category='error')
+			flash('Invalid email or password', category='warning')
 		else:
 			if check_password_hash(user['data']['password'], password):
 				session['user_id'] = user['ref'].id()
+				flash('Signed in successfully', 'success')
 				return redirect(url_for('dashboard'))
+			else:
+				flash('Invalid email or password', 'warning')
 	return render_template('signin.html')
 
 @app.route('/signup/', methods=['POST', 'GET'])
@@ -52,30 +55,26 @@ def signup():
 		name = request.form['name']
 		email = request.form['email']
 		password = request.form['password']
-		print(name, email, password)
-		pwd_reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
 		email_regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
-		if not re.search(email_regex, email) or not re.search(password, pwd_reg):
-			flash('Invalid email or password!, password needs to be between 6 and 20 characters')
+		if not re.search(email_regex, email) or not 6 < len(password) < 20:
+			flash('Invalid email or password!, password needs to be between 6 and 20 characters', 'warning')
 			return render_template('signup.html')
 		if password != request.form['confirm_password']:
-			flash('Invalid email or password!, password needs to be between 6 and 20 characters')
+			flash('password fields not equal', 'warning')
 			return render_template('signup.html')
 		password = generate_password_hash(password)
 		user = {'name': name, 'email': email, 'password': password}
-		print(user)
 		try:
 			# store user data to db
 			new_user = client.query(q.create(
 				q.collection('user'),
-				{'data': {**user, 'id': secrets.token_hex(12)}}
+				{'data': user}
 			))
-			print(new_user)
-			print(new_user['ref'].id())
 		except BadRequest:
 			flash('Email already exists')
 		else:
 			session['user_id'] = new_user['ref'].id()
+			flash('Account created successfully', 'success')
 			return redirect(url_for('dashboard'))
 	return render_template('signup.html')
 
@@ -88,7 +87,7 @@ def dashboard():
 	user = client.query(
 		q.get(q.ref(q.collection("user"), session['user_id']))
 	)['data']
-	return render_template('dashboard.html', current_user=user, name=user['name'])
+	return render_template('dashboard.html', current_user=user)
 
 @app.route("/signout/")
 def signout():
